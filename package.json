@@ -2,28 +2,39 @@
   "name": "electron-ffmpeg-gui",
   "version": "1.0.0",
   "description": "ffmpeg gui in mac os",
-  "main": "index.js",
+  "main": "dist/main.js",
   "repository": "git@github.com:Shiou-Ju/electron-ffmpeg-gui.git",
   "author": "Bamboo <75402531+Shiou-Ju@users.noreply.github.com>",
   "license": "MIT",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && yarn build:renderer && yarn copy-html",
     "watch": "tsc -w",
-    "start": "yarn build && electron ./dist/main.js",
-    "eslint": "eslint src --no-ignore"
+    "start": "electron .",
+    "dev": "yarn build && concurrently \"yarn watch\" \"yarn build:renderer --watch\" \"yarn start\"",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
+    "copy-html": "cp index.html dist/",
+    "build:renderer": "webpack --config webpack.renderer.config.js"
   },
   "dependencies": {
     "electron": "^34.1.1",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",
     "@types/node": "^22.13.1",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
     "eslint": "^9.20.0",
-    "eslint-plugin-react": "^7.37.4",
-    "eslint-plugin-typescript": "^0.14.0",
     "globals": "^15.14.0",
-    "typescript-eslint": "^8.23.0",
-    "typescript-eslint-parser": "^22.0.0"
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4",
+    "ts-loader": "^9.5.1",
+    "html-webpack-plugin": "^5.6.0",
+    "concurrently": "^8.2.2"
   }
 }
