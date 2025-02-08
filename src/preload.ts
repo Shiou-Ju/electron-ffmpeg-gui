@@ -12,6 +12,9 @@ contextBridge.exposeInMainWorld('api', {
     console.log('startEncode called');
     return ipcRenderer.invoke('start-encode', inputFile);
   },
+  setLanguage: (language: 'zh' | 'en') => {
+    return ipcRenderer.invoke('set-language', language);
+  },
   onProgress: (callback: (progress: any) => void) => {
     ipcRenderer.on('encode-progress', (_, data) => callback(data));
   }

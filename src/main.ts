@@ -1,8 +1,10 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
 import { spawn } from 'child_process';
+import fs from 'fs';
 
 let mainWindow: BrowserWindow | null = null;
+let language: 'zh' | 'en' = 'zh';
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -70,8 +72,48 @@ ipcMain.handle('start-encode', async (_, inputFile: string) => {
   const dirname = path.dirname(inputFile);
   const outputFile = path.join(dirname, `encoded_${basename}`);
 
+  // 檢查檔案是否存在
+  if (fs.existsSync(outputFile)) {
+    const dialogButtons = language === 'zh' 
+      ? ['覆蓋', '取消']
+      : ['Overwrite', 'Cancel'];
+    
+    const dialogTitle = language === 'zh'
+      ? '檔案已存在'
+      : 'File Exists';
+    
+    const dialogMessage = language === 'zh'
+      ? '輸出檔案已存在，是否要覆蓋？'
+      : 'Output file already exists. Do you want to overwrite it?';
+
+    const { response } = await dialog.showMessageBox({
+      type: 'question',
+      buttons: dialogButtons,
+      defaultId: 1,
+      title: dialogTitle,
+      message: dialogMessage,
+      detail: outputFile
+    });
+
+    if (response === 1) {
+      const cancelMessage = language === 'zh'
+        ? '使用者取消操作'
+        : 'Operation cancelled by user';
+      throw new Error(cancelMessage);
+    }
+
+    try {
+      fs.unlinkSync(outputFile);
+    } catch (err) {
+      const errorMessage = language === 'zh'
+        ? `無法刪除現有檔案：${err}`
+        : `Cannot delete existing file: ${err}`;
+      throw new Error(errorMessage);
+    }
+  }
+
   return new Promise((resolve, reject) => {
-    const ffmpegProcess = spawn('ffmpeg', ['-i', inputFile, outputFile]);
+    const ffmpegProcess = spawn('ffmpeg', ['-i', inputFile, '-y', outputFile]);
 
     // 監聽 stderr 輸出以獲取進度
     ffmpegProcess.stderr.on('data', (data) => {
@@ -96,15 +138,25 @@ ipcMain.handle('start-encode', async (_, inputFile: string) => {
     });
 
     ffmpegProcess.on('error', (err) => {
-      reject(`無法執行 ffmpeg，請確認系統中已安裝：${err.message}`);
+      const errorMessage = language === 'zh'
+        ? `無法執行 ffmpeg，請確認系統中已安裝：${err.message}`
+        : `Cannot execute ffmpeg, please make sure it is installed: ${err.message}`;
+      reject(errorMessage);
     });
 
     ffmpegProcess.on('close', (code) => {
       if (code === 0) {
         resolve({ outputFile });
       } else {
-        reject(`轉檔失敗，ffmpeg 退出代碼：${code}`);
+        const errorMessage = language === 'zh'
+          ? `轉檔失敗，ffmpeg 退出代碼：${code}`
+          : `Encoding failed, ffmpeg exit code: ${code}`;
+        reject(errorMessage);
       }
     });
   });
+});
+
+ipcMain.handle('set-language', (_, newLanguage: 'zh' | 'en') => {
+  language = newLanguage;
 }); 

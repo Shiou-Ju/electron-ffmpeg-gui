@@ -1,16 +1,22 @@
 import React, { useState, useEffect } from 'react';
+import { useLanguage } from './contexts/LanguageContext';
+import { translations } from './translations';
 
 declare global {
   interface Window {
     api: {
       selectFile: () => Promise<string | null>;
       startEncode: (inputFile: string) => Promise<{ outputFile: string }>;
+      setLanguage: (language: 'zh' | 'en') => Promise<void>;
       onProgress: (callback: (progress: any) => void) => void;
     }
   }
 }
 
 const App: React.FC = () => {
+  const { language, setLanguage } = useLanguage();
+  const t = translations[language];
+
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [status, setStatus] = useState<string>('');
   const [isEncoding, setIsEncoding] = useState(false);
@@ -53,30 +59,46 @@ const App: React.FC = () => {
     }
   };
 
+  const toggleLanguage = () => {
+    setLanguage(language === 'zh' ? 'en' : 'zh');
+  };
+
   return (
     <div style={{ padding: '20px' }}>
-      <h1>FFmpeg GUI</h1>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1>{t.title}</h1>
+        <button 
+          onClick={toggleLanguage}
+          style={{
+            padding: '4px 8px',
+            borderRadius: '4px',
+            border: '1px solid #ccc'
+          }}
+        >
+          {language === 'zh' ? 'English' : '中文'}
+        </button>
+      </div>
       <div>
         <button 
           onClick={handleFileSelect}
           disabled={isEncoding}
         >
-          選擇檔案
+          {t.selectFile}
         </button>
         <button 
           onClick={handleEncode}
           disabled={!selectedFile || isEncoding}
           style={{ marginLeft: '10px' }}
         >
-          開始轉檔
+          {t.startEncode}
         </button>
       </div>
       {selectedFile && (
-        <p>已選擇：{selectedFile}</p>
+        <p>{t.selectedFile} {selectedFile}</p>
       )}
       {isEncoding && progress && (
         <div className="progress">
-          <p>轉檔進度：</p>
+          <p>{t.encodeProgress}</p>
           <pre style={{ 
             background: '#f5f5f5', 
             padding: '10px', 
