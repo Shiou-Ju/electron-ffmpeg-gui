@@ -1,7 +1,8 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
-import { spawn, exec } from 'child_process';
+import { spawn, ChildProcess } from 'child_process';
 import fs from 'fs';
+import ffmpeg from 'ffmpeg-static';
 
 let mainWindow: BrowserWindow | null = null;
 let language: 'zh' | 'en' = 'zh';
@@ -63,36 +64,7 @@ ipcMain.handle('open-file-dialog', async () => {
   return filePaths[0];
 });
 
-// 檢查系統 ffmpeg
-function checkFFmpeg(): Promise<boolean> {
-  return new Promise((resolve) => {
-    exec('ffmpeg -version', (error) => {
-      resolve(!error);
-    });
-  });
-}
-
 ipcMain.handle('start-encode', async (_, inputFile: string) => {
-  // 先設置環境變數
-  const env = {
-    ...process.env,
-    PATH: `${process.env.PATH}:/usr/local/bin:/opt/homebrew/bin`
-  };
-
-  // 使用更新後的環境變數檢查 ffmpeg
-  const checkFFmpeg = () => new Promise<boolean>((resolve) => {
-    exec('ffmpeg -version', { env }, (error) => {
-      resolve(!error);
-    });
-  });
-
-  const hasFFmpeg = await checkFFmpeg();
-  if (!hasFFmpeg) {
-    throw new Error(language === 'zh' 
-      ? '請先安裝 FFmpeg（brew install ffmpeg）' 
-      : 'Please install FFmpeg first (brew install ffmpeg)');
-  }
-
   const basename = path.basename(inputFile);
   const dirname = path.dirname(inputFile);
   const outputFile = path.join(dirname, `encoded_${basename}`);
@@ -138,13 +110,45 @@ ipcMain.handle('start-encode', async (_, inputFile: string) => {
   }
 
   return new Promise((resolve, reject) => {
-    const ffmpegProcess = spawn('ffmpeg', ['-i', inputFile, '-y', outputFile], { env });
+    if (!ffmpeg) {
+      reject(new Error(language === 'zh' 
+        ? 'ffmpeg-static 未正確安裝' 
+        : 'ffmpeg-static is not properly installed'));
+      return;
+    }
 
-    // 監聽 stderr 輸出以獲取進度
-    ffmpegProcess.stderr.on('data', (data) => {
+    // 在開發環境和生產環境中處理 ffmpeg 路徑
+    let ffmpegPath = ffmpeg;
+    if (app.isPackaged) {
+      // 在打包的應用程式中，使用相對於應用程式的路徑
+      ffmpegPath = path.join(
+        process.resourcesPath,
+        'app.asar.unpacked',
+        'node_modules',
+        'ffmpeg-static',
+        ffmpeg.split('node_modules/ffmpeg-static/')[1]
+      );
+    }
+
+    console.log('Using ffmpeg path:', ffmpegPath);
+
+    if (!fs.existsSync(ffmpegPath)) {
+      reject(new Error(language === 'zh'
+        ? `找不到 ffmpeg 執行檔：${ffmpegPath}`
+        : `Cannot find ffmpeg executable: ${ffmpegPath}`));
+      return;
+    }
+
+    const ffmpegProcess: ChildProcess = spawn(ffmpegPath, ['-i', inputFile, '-y', outputFile]);
+
+    if (!ffmpegProcess.stderr) {
+      reject(new Error('Failed to start ffmpeg process'));
+      return;
+    }
+
+    ffmpegProcess.stderr.on('data', (data: Buffer) => {
       const output = data.toString();
       
-      // 解析時間資訊
       const timeMatch = output.match(/time=(\d{2}):(\d{2}):(\d{2}.\d{2})/);
       if (timeMatch) {
         const [_, hours, minutes, seconds] = timeMatch;
@@ -152,7 +156,6 @@ ipcMain.handle('start-encode', async (_, inputFile: string) => {
                           parseFloat(minutes) * 60 + 
                           parseFloat(seconds);
         
-        // 發送進度更新到渲染進程
         if (mainWindow) {
           mainWindow.webContents.send('encode-progress', {
             currentTime,
@@ -162,14 +165,14 @@ ipcMain.handle('start-encode', async (_, inputFile: string) => {
       }
     });
 
-    ffmpegProcess.on('error', (err) => {
-      const errorMessage = language === 'zh'
-        ? `無法執行 ffmpeg，請確認系統中已安裝：${err.message}`
-        : `Cannot execute ffmpeg, please make sure it is installed: ${err.message}`;
+    ffmpegProcess.on('error', (err: Error) => {
+      const errorMessage = language === 'zh' 
+        ? `無法執行 ffmpeg：${err.message}`
+        : `Cannot execute ffmpeg: ${err.message}`;
       reject(errorMessage);
     });
 
-    ffmpegProcess.on('close', (code) => {
+    ffmpegProcess.on('close', (code: number | null) => {
       if (code === 0) {
         resolve({ outputFile });
       } else {

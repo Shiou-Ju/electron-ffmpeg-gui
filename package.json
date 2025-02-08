@@ -23,47 +23,61 @@
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
+    "ffmpeg-static": "^5.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "electron": "^34.1.1",
-    "typescript": "^5.7.3",
     "@eslint/js": "^9.20.0",
+    "@types/ffmpeg-static": "^3.0.3",
     "@types/node": "^22.13.1",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
+    "concurrently": "^8.2.2",
+    "electron": "^34.1.1",
+    "electron-builder": "^25.1.8",
     "eslint": "^9.20.0",
     "globals": "^15.14.0",
-    "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.4",
-    "ts-loader": "^9.5.1",
     "html-webpack-plugin": "^5.6.0",
-    "concurrently": "^8.2.2",
-    "electron-builder": "^25.1.8"
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.7.3",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
   },
   "build": {
     "asar": true,
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/**/*"
+    ],
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
     "appId": "com.ffmpeg.gui",
     "productName": "FFmpeg GUI",
     "directories": {
       "output": "release"
     },
-    "files": [
-      "dist/**/*",
-      "package.json"
-    ],
     "mac": {
       "category": "public.app-category.video",
-      "target": ["dmg", "zip"]
+      "target": [
+        "dmg",
+        "zip"
+      ]
     },
     "win": {
-      "target": ["nsis", "portable"]
+      "target": [
+        "nsis",
+        "portable"
+      ]
     },
     "linux": {
-      "target": ["AppImage", "deb"]
+      "target": [
+        "AppImage",
+        "deb"
+      ]
     },
     "publish": {
       "provider": "github",
@@ -71,4 +85,3 @@
     }
   }
 }
-
