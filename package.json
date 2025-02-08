@@ -1,0 +1,29 @@
+{
+  "name": "electron-ffmpeg-gui",
+  "version": "1.0.0",
+  "description": "ffmpeg gui in mac os",
+  "main": "index.js",
+  "repository": "git@github.com:Shiou-Ju/electron-ffmpeg-gui.git",
+  "author": "Bamboo <75402531+Shiou-Ju@users.noreply.github.com>",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "start": "yarn build && electron ./dist/main.js",
+    "eslint": "eslint src --no-ignore"
+  },
+  "dependencies": {
+    "electron": "^34.1.1",
+    "typescript": "^5.7.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.20.0",
+    "@types/node": "^22.13.1",
+    "eslint": "^9.20.0",
+    "eslint-plugin-react": "^7.37.4",
+    "eslint-plugin-typescript": "^0.14.0",
+    "globals": "^15.14.0",
+    "typescript-eslint": "^8.23.0",
+    "typescript-eslint-parser": "^22.0.0"
+  }
+}
