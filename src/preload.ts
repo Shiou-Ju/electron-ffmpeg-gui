@@ -11,5 +11,8 @@ contextBridge.exposeInMainWorld('api', {
   startEncode: (inputFile: string) => {
     console.log('startEncode called');
     return ipcRenderer.invoke('start-encode', inputFile);
+  },
+  onProgress: (callback: (progress: any) => void) => {
+    ipcRenderer.on('encode-progress', (_, data) => callback(data));
   }
 });

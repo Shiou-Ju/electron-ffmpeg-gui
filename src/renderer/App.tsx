@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 declare global {
   interface Window {
     api: {
       selectFile: () => Promise<string | null>;
       startEncode: (inputFile: string) => Promise<{ outputFile: string }>;
+      onProgress: (callback: (progress: any) => void) => void;
     }
   }
 }
@@ -13,6 +14,13 @@ const App: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [status, setStatus] = useState<string>('');
   const [isEncoding, setIsEncoding] = useState(false);
+  const [progress, setProgress] = useState<string>('');
+
+  useEffect(() => {
+    window.api.onProgress((data) => {
+      setProgress(data.output);
+    });
+  }, []);
 
   const handleFileSelect = async () => {
     try {
@@ -65,6 +73,20 @@ const App: React.FC = () => {
       </div>
       {selectedFile && (
         <p>已選擇：{selectedFile}</p>
+      )}
+      {isEncoding && progress && (
+        <div className="progress">
+          <p>轉檔進度：</p>
+          <pre style={{ 
+            background: '#f5f5f5', 
+            padding: '10px', 
+            borderRadius: '4px',
+            maxHeight: '200px',
+            overflow: 'auto'
+          }}>
+            {progress}
+          </pre>
+        </div>
       )}
       {status && (
         <p style={{ 
