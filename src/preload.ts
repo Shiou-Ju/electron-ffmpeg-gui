@@ -1,6 +1,15 @@
-import { contextBridge } from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
+
+console.log('Preload script loaded');
 
 // 在這裡定義安全的 API
 contextBridge.exposeInMainWorld('api', {
-  // 之後可以添加 FFmpeg 相關的功能
+  selectFile: () => {
+    console.log('selectFile called');
+    return ipcRenderer.invoke('open-file-dialog');
+  },
+  startEncode: (inputFile: string) => {
+    console.log('startEncode called');
+    return ipcRenderer.invoke('start-encode', inputFile);
+  }
 });
