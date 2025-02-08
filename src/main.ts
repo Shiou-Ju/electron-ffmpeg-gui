@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron';
 import path from 'path';
-import { spawn } from 'child_process';
+import { spawn, exec } from 'child_process';
 import fs from 'fs';
 
 let mainWindow: BrowserWindow | null = null;
@@ -63,9 +63,34 @@ ipcMain.handle('open-file-dialog', async () => {
   return filePaths[0];
 });
 
+// 檢查系統 ffmpeg
+function checkFFmpeg(): Promise<boolean> {
+  return new Promise((resolve) => {
+    exec('ffmpeg -version', (error) => {
+      resolve(!error);
+    });
+  });
+}
+
 ipcMain.handle('start-encode', async (_, inputFile: string) => {
-  if (!inputFile) {
-    throw new Error('沒有選擇任何檔案');
+  // 先設置環境變數
+  const env = {
+    ...process.env,
+    PATH: `${process.env.PATH}:/usr/local/bin:/opt/homebrew/bin`
+  };
+
+  // 使用更新後的環境變數檢查 ffmpeg
+  const checkFFmpeg = () => new Promise<boolean>((resolve) => {
+    exec('ffmpeg -version', { env }, (error) => {
+      resolve(!error);
+    });
+  });
+
+  const hasFFmpeg = await checkFFmpeg();
+  if (!hasFFmpeg) {
+    throw new Error(language === 'zh' 
+      ? '請先安裝 FFmpeg（brew install ffmpeg）' 
+      : 'Please install FFmpeg first (brew install ffmpeg)');
   }
 
   const basename = path.basename(inputFile);
@@ -113,7 +138,7 @@ ipcMain.handle('start-encode', async (_, inputFile: string) => {
   }
 
   return new Promise((resolve, reject) => {
-    const ffmpegProcess = spawn('ffmpeg', ['-i', inputFile, '-y', outputFile]);
+    const ffmpegProcess = spawn('ffmpeg', ['-i', inputFile, '-y', outputFile], { env });
 
     // 監聽 stderr 輸出以獲取進度
     ffmpegProcess.stderr.on('data', (data) => {

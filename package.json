@@ -14,15 +14,21 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "copy-html": "cp index.html dist/",
-    "build:renderer": "webpack --config webpack.renderer.config.js"
+    "build:renderer": "webpack --config webpack.renderer.config.js",
+    "pack": "electron-builder --dir",
+    "dist": "yarn build && electron-builder",
+    "dist:mac": "yarn build && electron-builder --mac",
+    "dist:win": "yarn build && electron-builder --win",
+    "dist:linux": "yarn build && electron-builder --linux",
+    "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
-    "electron": "^34.1.1",
-    "typescript": "^5.7.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "electron": "^34.1.1",
+    "typescript": "^5.7.3",
     "@eslint/js": "^9.20.0",
     "@types/node": "^22.13.1",
     "@types/react": "^18.2.0",
@@ -35,6 +41,34 @@
     "webpack-cli": "^5.1.4",
     "ts-loader": "^9.5.1",
     "html-webpack-plugin": "^5.6.0",
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "asar": true,
+    "appId": "com.ffmpeg.gui",
+    "productName": "FFmpeg GUI",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.video",
+      "target": ["dmg", "zip"]
+    },
+    "win": {
+      "target": ["nsis", "portable"]
+    },
+    "linux": {
+      "target": ["AppImage", "deb"]
+    },
+    "publish": {
+      "provider": "github",
+      "private": false
+    }
   }
 }
+
